@@ -1,2 +1,2 @@
 # task
-A project of learning React
+A project for React App
