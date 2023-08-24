@@ -11,7 +11,9 @@ import {
   message,
 } from "antd";
 import "./Task.less";
-import { getTaskList, addTask, removeTask, completeTask } from "@/api";
+import { addTask, removeTask, completeTask } from "@/api";
+import { connect } from "react-redux";
+import action from "../store/actions";
 const zero = function (text) {
   return String(text).length < 2 ? "0" + text : text;
 };
@@ -19,7 +21,8 @@ const formatTime = function (time) {
   const [_, month, day, hours = "00", minutes = "00"] = time.match(/\d+/g);
   return `${zero(month)}-${zero(day)} ${zero(hours)}:${zero(minutes)}`;
 };
-export default function Task() {
+const Task = function (props) {
+  let { taskList, queryAllList, deleteTaskById, updateTaskById } = props;
   //定义表的列数据
   const columns = [
     {
@@ -85,8 +88,26 @@ export default function Task() {
   let [showLoading, setShowLoading] = useState(false);
   let [showButtonLoading, setShowButtonLoading] = useState(false);
   useEffect(() => {
-    queryData();
-  }, [selectedIndex]);
+    (async () => {
+      if (!taskList) {
+        setShowLoading(true);
+        await queryAllList();
+        setShowLoading(false);
+      }
+    })();
+  }, []);
+  useEffect(() => {
+    if (!taskList) {
+      setTableData([]);
+      return;
+    }
+    if (selectedIndex !== 0) {
+      taskList = taskList.filter((item) => {
+        return +item.state === +selectedIndex;
+      });
+    }
+    setTableData(taskList);
+  }, [taskList, selectedIndex]);
   let addTaskFn = () => {
     setShowVisible(true);
   };
@@ -97,7 +118,6 @@ export default function Task() {
       time = time.format("YYYY-MM-DD HH:mm:ss");
       setShowButtonLoading(true);
       updateTask(task, time);
-      message.success("新增任务成功～");
     } catch (error) {
       message.error("新增任务失败，请稍后重试～");
     }
@@ -105,23 +125,8 @@ export default function Task() {
   };
   const close = () => {
     formIns.resetFields();
-    console.log(123);
     setShowButtonLoading(false);
     setShowVisible(false);
-  };
-  //查询数据
-  const queryData = async () => {
-    try {
-      setShowLoading(true);
-      const { code, list } = await getTaskList(selectedIndex);
-      if (+code !== 0) {
-        message.error("获取数据异常，请稍后重试～");
-      }
-      setTableData(list);
-    } catch (error) {
-      message.error(error);
-    }
-    setShowLoading(false);
   };
   //更新数据
   const updateTask = async (task, time) => {
@@ -132,6 +137,7 @@ export default function Task() {
       }
       message.success("任务添加成功～");
       close();
+      queryAllList();
     } catch (error) {
       message.error("更新数据失败，请稍后重试～");
     }
@@ -143,8 +149,8 @@ export default function Task() {
       if (+code !== 0) {
         message.error("任务删除失败，请稍后重试～");
       }
+      deleteTaskById(id);
       message.success("删除成功～");
-      queryData();
     } catch (error) {
       message.error("数据删除失败，请稍后重试～");
     }
@@ -156,8 +162,8 @@ export default function Task() {
       if (+code !== 0) {
         message.error("操作失败，请稍后重试～");
       }
+      updateTaskById(id);
       message.success("操作成功～");
-      queryData();
     } catch (error) {
       message.error("任务操作失败，请稍后重试～");
     }
@@ -223,4 +229,5 @@ export default function Task() {
       </Modal>
     </div>
   );
-}
+};
+export default connect((state) => state.task, action.task)(Task);
