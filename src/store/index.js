@@ -1,10 +1,9 @@
-import { createStore, applyMiddleware } from "redux";
-import reducer from "./reducers";
+import { configureStore } from "@reduxjs/toolkit";
 import reduxLogger from "redux-logger";
-import reduxPromise from "redux-promise";
 import reduxThunk from "redux-thunk";
-const store = createStore(
-  reducer,
-  applyMiddleware(reduxLogger, reduxPromise, reduxThunk)
-);
+import taskReducer from "./features/taskSlice";
+const store = configureStore({
+  reducer: { task: taskReducer },
+  middleware: [reduxLogger, reduxThunk],
+});
 export default store;

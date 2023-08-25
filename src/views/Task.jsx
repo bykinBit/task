@@ -1,4 +1,4 @@
-import React, { Component, useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Button,
   Form,
@@ -12,8 +12,12 @@ import {
 } from "antd";
 import "./Task.less";
 import { addTask, removeTask, completeTask } from "@/api";
-import { connect } from "react-redux";
-import action from "../store/actions";
+import { useSelector, useDispatch } from "react-redux";
+import {
+  getAllTaskListAsync,
+  removeTaskItem,
+  updateTaskItem,
+} from "../store/features/taskSlice";
 const zero = function (text) {
   return String(text).length < 2 ? "0" + text : text;
 };
@@ -21,8 +25,9 @@ const formatTime = function (time) {
   const [_, month, day, hours = "00", minutes = "00"] = time.match(/\d+/g);
   return `${zero(month)}-${zero(day)} ${zero(hours)}:${zero(minutes)}`;
 };
-const Task = function (props) {
-  let { taskList, queryAllList, deleteTaskById, updateTaskById } = props;
+const Task = function () {
+  let { taskList } = useSelector((state) => state.task);
+  const dispatch = useDispatch();
   //定义表的列数据
   const columns = [
     {
@@ -91,16 +96,13 @@ const Task = function (props) {
     (async () => {
       if (!taskList) {
         setShowLoading(true);
-        await queryAllList();
+        await dispatch(getAllTaskListAsync());
         setShowLoading(false);
       }
     })();
   }, []);
   useEffect(() => {
-    if (!taskList) {
-      setTableData([]);
-      return;
-    }
+    if (!taskList) taskList = [];
     if (selectedIndex !== 0) {
       taskList = taskList.filter((item) => {
         return +item.state === +selectedIndex;
@@ -137,7 +139,7 @@ const Task = function (props) {
       }
       message.success("任务添加成功～");
       close();
-      queryAllList();
+      await dispatch(getAllTaskListAsync(0));
     } catch (error) {
       message.error("更新数据失败，请稍后重试～");
     }
@@ -149,7 +151,7 @@ const Task = function (props) {
       if (+code !== 0) {
         message.error("任务删除失败，请稍后重试～");
       }
-      deleteTaskById(id);
+      dispatch(removeTaskItem(id));
       message.success("删除成功～");
     } catch (error) {
       message.error("数据删除失败，请稍后重试～");
@@ -162,7 +164,7 @@ const Task = function (props) {
       if (+code !== 0) {
         message.error("操作失败，请稍后重试～");
       }
-      updateTaskById(id);
+      dispatch(updateTaskItem(id));
       message.success("操作成功～");
     } catch (error) {
       message.error("任务操作失败，请稍后重试～");
@@ -230,4 +232,4 @@ const Task = function (props) {
     </div>
   );
 };
-export default connect((state) => state.task, action.task)(Task);
+export default Task;
