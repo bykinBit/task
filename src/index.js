@@ -5,11 +5,11 @@ import { ConfigProvider } from "antd";
 import zhCN from "antd/locale/zh_CN";
 import Task from "./views/Task";
 import store from "./store";
-import { Provider } from "react-redux";
+import { Provider } from "mobx-react";
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <ConfigProvider locale={zhCN}>
-    <Provider store={store}>
+    <Provider {...store}>
       <Task />
     </Provider>
   </ConfigProvider>

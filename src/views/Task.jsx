@@ -12,12 +12,9 @@ import {
 } from "antd";
 import "./Task.less";
 import { addTask, removeTask, completeTask } from "@/api";
-import { useSelector, useDispatch } from "react-redux";
-import {
-  getAllTaskListAsync,
-  removeTaskItem,
-  updateTaskItem,
-} from "../store/features/taskSlice";
+//observer 状态更改让试图更新的
+//inject基于上文出现的provider提供的状态而获取状态的
+import { inject, observer } from "mobx-react";
 const zero = function (text) {
   return String(text).length < 2 ? "0" + text : text;
 };
@@ -25,9 +22,8 @@ const formatTime = function (time) {
   const [_, month, day, hours = "00", minutes = "00"] = time.match(/\d+/g);
   return `${zero(month)}-${zero(day)} ${zero(hours)}:${zero(minutes)}`;
 };
-const Task = function () {
-  let { taskList } = useSelector((state) => state.task);
-  const dispatch = useDispatch();
+const Task = function (props) {
+  let { task } = props;
   //定义表的列数据
   const columns = [
     {
@@ -94,14 +90,15 @@ const Task = function () {
   let [showButtonLoading, setShowButtonLoading] = useState(false);
   useEffect(() => {
     (async () => {
-      if (!taskList) {
+      if (!task.taskList) {
         setShowLoading(true);
-        await dispatch(getAllTaskListAsync());
+        await task.queryAllTaskAction();
         setShowLoading(false);
       }
     })();
   }, []);
   useEffect(() => {
+    let { taskList } = task;
     if (!taskList) taskList = [];
     if (selectedIndex !== 0) {
       taskList = taskList.filter((item) => {
@@ -109,7 +106,7 @@ const Task = function () {
       });
     }
     setTableData(taskList);
-  }, [taskList, selectedIndex]);
+  }, [task.taskList, selectedIndex]);
   let addTaskFn = () => {
     setShowVisible(true);
   };
@@ -131,15 +128,15 @@ const Task = function () {
     setShowVisible(false);
   };
   //更新数据
-  const updateTask = async (task, time) => {
+  const updateTask = async (tasks, time) => {
     try {
-      const { code } = await addTask(task, time);
+      const { code } = await addTask(tasks, time);
       if (+code !== 0) {
         message.error("任务添加失败，请稍后重试～");
       }
       message.success("任务添加成功～");
       close();
-      await dispatch(getAllTaskListAsync(0));
+      await task.queryAllTaskAction(0);
     } catch (error) {
       message.error("更新数据失败，请稍后重试～");
     }
@@ -151,7 +148,7 @@ const Task = function () {
       if (+code !== 0) {
         message.error("任务删除失败，请稍后重试～");
       }
-      dispatch(removeTaskItem(id));
+      task.removeTaskAction(id);
       message.success("删除成功～");
     } catch (error) {
       message.error("数据删除失败，请稍后重试～");
@@ -164,7 +161,7 @@ const Task = function () {
       if (+code !== 0) {
         message.error("操作失败，请稍后重试～");
       }
-      dispatch(updateTaskItem(id));
+      task.updateTaskAction(id);
       message.success("操作成功～");
     } catch (error) {
       message.error("任务操作失败，请稍后重试～");
@@ -232,4 +229,4 @@ const Task = function () {
     </div>
   );
 };
-export default Task;
+export default inject("task")(observer(Task));
